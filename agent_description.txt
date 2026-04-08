@@ -1,0 +1,42 @@
+﻿Agent Config Documentation
+Overview
+This document describes the configuration structure for a RAG system.  
+Core Configuration Fields
+Agent Identification
+* agent: Unique identifier for the agent 
+* doctype: Document type that the agent processes
+Model Parameters
+* params: Configuration for the underlying AI model
+   * temperature: Controls randomness in responses 
+   * max_tokens: Maximum number of tokens in the response
+   * model: Specific model to use 
+Input Configuration
+* input_data: Array of required input fields that must be provided to the agent
+* response_type: Format of the response 
+Vector Store Configuration
+* vectorstore: Configuration for similarity search and document retrieval
+   * data: Fields used for similarity matching
+   * filter: Fields used to filter search results
+   * metadata: Additional fields stored with documents for retrieval
+   * cnt_similarities: Number of similar documents to retrieve
+Data Dependencies
+Prerequisites
+Database queries executed before main processing to gather required data:
+* conn: Database connection identifier
+* name: Reference name for the query result
+* type: Query type 
+* query: SQL query with parameter placeholders
+* params: Parameter mappings from input data to query variables
+* noofrows: Number of rows to return.
+Postrequisites
+Database queries executed after similarity search:
+* Similar structure to prerequisites.
+* Used to retrieve policy information
+Embedding Configuration
+* embedding_model: Model used for generating document embeddings.
+Prompt Template
+* prompt_template: Configuration for generating prompts to the AI model
+   * input: Array mapping data sources to template variables
+      * key: Path to data source
+      * name: Variable name used in template
+   * template: String template with placeholders for variables

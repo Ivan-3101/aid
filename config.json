@@ -1,0 +1,58 @@
+{
+  "TZ":"Asia/Calcutta",
+  "appname":"agentdev",
+  "schema":"agents",
+  "path":"/app/secrets",
+  "provider":"huggingface",
+  "connections": [
+  {
+    "name": "txndb",
+    "params":{
+    "pool_size": 10,
+    "max_overflow": 0,
+    "pool_pre_ping": true
+    }
+
+  }
+],
+"rocksdb": [
+
+],
+"redis": [],
+  "logs": {
+      "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+      "simple": {
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      }
+    },
+    "handlers": {
+      "console": {
+        "class": "logging.StreamHandler",
+        "level": "DEBUG",
+        "formatter": "simple",
+        "stream": "ext://sys.stdout"
+      },
+      "file_handler": {
+        "class": "logging.handlers.TimedRotatingFileHandler",
+        "level": "DEBUG",
+        "formatter": "simple",
+        "filename": "/app/logs/batch.log",
+              "when": "midnight",
+              "interval": 1,
+              "backupCount": 5
+      }
+    },
+  
+    "loggers": {
+      "DIA": {
+        "level": "DEBUG",
+        "handlers": ["file_handler","console"],
+        "propagate": "no"
+      }
+    }}
+    
+  }
+  
+  

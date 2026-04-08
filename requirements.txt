@@ -1,0 +1,13 @@
+fastapi 
+uvicorn 
+sqlalchemy 
+psycopg[binary]
+pandas
+sentence-transformers
+langchain
+langchain_community
+langchain_openai
+langchain_huggingface
+huggingface_hub[hf_xet]
+langchain-postgres
+redis
