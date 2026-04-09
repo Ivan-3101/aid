@@ -5,7 +5,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Dict, Any,Optional
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.schema import Document
+# from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres.vectorstores import PGVector
 from langchain_openai import OpenAI
@@ -34,7 +35,7 @@ globals.startup()
 app = FastAPI()
 
 security = HTTPBasic()
-os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
+# os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
 vector_store = {}
 embeddings={}
 
@@ -162,7 +163,13 @@ def get_chain_result(agentid,agent_config,agent_data):
         inputs[field['name']]=utils.get_var(agent_data,field['key'])
     # Initialize LLM and chain
     filled_prompt = prompt.format(**inputs) 
-    llm = ChatOpenAI(**agent_config['model_config']['params'])
+    # llm = ChatOpenAI(**agent_config['model_config']['params'])
+    llm = ChatOpenAI(
+    base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
+    api_key="ollama",
+    **agent_config['model_config']['params']
+)
+
     #chain = prompt | llm
     message_content =[{
         "type": "text",
