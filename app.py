@@ -2,23 +2,19 @@
 from fastapi import FastAPI, Depends, HTTPException, status,Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from typing import Dict, Any,Optional
-from langchain_community.embeddings import OpenAIEmbeddings
+from typing import Dict, Any, Optional
 from langchain_huggingface import HuggingFaceEmbeddings
-# from langchain.schema import Document
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres.vectorstores import PGVector
-from langchain_openai import OpenAI
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel
 import globals
 import db
 import os
 import json
 
-import db
 import utils
 from datetime import date, datetime
 from html import escape
