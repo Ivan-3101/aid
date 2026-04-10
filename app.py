@@ -31,7 +31,7 @@ globals.startup()
 app = FastAPI()
 
 security = HTTPBasic()
-# os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
+os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
 vector_store = {}
 embeddings={}
 
@@ -159,12 +159,23 @@ def get_chain_result(agentid,agent_config,agent_data):
         inputs[field['name']]=utils.get_var(agent_data,field['key'])
     # Initialize LLM and chain
     filled_prompt = prompt.format(**inputs) 
+
+    model_name = agent_config['model_config']['params'].get('model', '')
+
+    if model_name.startswith('gemma'):
+        llm = ChatOpenAI(
+            base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
+            api_key="ollama",
+            **agent_config['model_config']['params']
+        )
+    else:
+        llm = ChatOpenAI(**agent_config['model_config']['params'])
     # llm = ChatOpenAI(**agent_config['model_config']['params'])
-    llm = ChatOpenAI(
-    base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
-    api_key="ollama",
-    **agent_config['model_config']['params']
-)
+#     llm = ChatOpenAI(
+#     base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
+#     api_key="ollama",
+#     **agent_config['model_config']['params']
+# )
 
     #chain = prompt | llm
     message_content =[{
@@ -345,7 +356,18 @@ async def recommend_action(request: DynamicRequest,username: str = Depends(get_c
     prompt = get_prompt_template(agent_config)
     policy = get_policy_from_db(agentid)
     # Initialize LLM and chain
-    llm = OpenAI(**agent_config['model_config']['params'])
+    # llm = OpenAI(**agent_config['model_config']['params'])
+    model_name = agent_config['model_config']['params'].get('model', '')
+
+    if model_name.startswith('gemma'):
+        llm = ChatOpenAI(
+            base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
+            api_key="ollama",
+            **agent_config['model_config']['params']
+        )
+    else:
+        llm = ChatOpenAI(**agent_config['model_config']['params'])
+
     chain = prompt | llm
     inputs = {
         "policy": policy,  # Assuming `policy_document` is loaded dynamically
