@@ -11,3 +11,5 @@ langchain_huggingface
 huggingface_hub[hf_xet]
 langchain-postgres
 redis
+langchain-google-genai
+langchain-ollama

@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Depends, HTTPException, status,Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
@@ -15,6 +14,7 @@ import db
 import os
 import json
 
+import db
 import utils
 from datetime import date, datetime
 from html import escape
@@ -31,7 +31,11 @@ globals.startup()
 app = FastAPI()
 
 security = HTTPBasic()
-os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
+if globals.secret_data.get('OPENAI_API_KEY'):
+    os.environ["OPENAI_API_KEY"] = globals.secret_data['OPENAI_API_KEY']
+# GOOGLE_API_KEY is optional — only set if present in secrets (not needed for Ollama/Gemma)
+if globals.secret_data.get('GOOGLE_API_KEY'):
+    os.environ["GOOGLE_API_KEY"] = globals.secret_data['GOOGLE_API_KEY']
 vector_store = {}
 embeddings={}
 
@@ -49,6 +53,46 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 class DynamicRequest(BaseModel):
     data: Dict[str, Any]
     agentid: str
+
+def get_llm(agent_config):
+    """Create an LLM instance based on provider config.
+
+    Provider resolution order:
+      1. agent_config['model_config']['provider']  (per-agent override in masters.sysconfig)
+      2. globals.config['llm_provider']             (global default in config.json)
+      3. 'openai'                                   (hardcoded fallback)
+
+    Supported providers:
+      - 'openai'  : ChatOpenAI  — uses OPENAI_API_KEY from secrets
+      - 'ollama'  : ChatOllama  — uses llm_base_url from config.json (strips /v1 suffix)
+      - 'google'  : ChatGoogleGenerativeAI — uses GOOGLE_API_KEY from secrets
+    """
+    model_config = agent_config['model_config']
+    provider = model_config.get('provider', globals.config.get('llm_provider', 'openai'))
+    params = model_config.get('params', {})
+
+    if provider == 'openai':
+        return ChatOpenAI(**params)
+
+    elif provider == 'ollama':
+        from langchain_ollama import ChatOllama
+        ollama_params = dict(params)
+        if 'base_url' not in ollama_params:
+            # Our config uses llm_base_url with /v1 suffix (OpenAI-compat format).
+            # ChatOllama uses Ollama's native API — strip /v1 before passing.
+            raw_url = globals.config.get('llm_base_url', 'http://localhost:11434')
+            ollama_params['base_url'] = raw_url.replace('/v1', '').rstrip('/')
+        return ChatOllama(**ollama_params)
+
+    elif provider == 'google':
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(**params)
+
+    else:
+        raise ValueError(
+            f"Unsupported LLM provider: '{provider}'. "
+            f"Supported values: 'openai', 'ollama', 'google'"
+        )
 
 # Helper functions
 def load_vector_store(agentid: str,embedding_model:str):
@@ -159,24 +203,7 @@ def get_chain_result(agentid,agent_config,agent_data):
         inputs[field['name']]=utils.get_var(agent_data,field['key'])
     # Initialize LLM and chain
     filled_prompt = prompt.format(**inputs) 
-
-    model_name = agent_config['model_config']['params'].get('model', '')
-
-    if model_name.startswith('gemma'):
-        llm = ChatOpenAI(
-            base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
-            api_key="ollama",
-            **agent_config['model_config']['params']
-        )
-    else:
-        llm = ChatOpenAI(**agent_config['model_config']['params'])
-    # llm = ChatOpenAI(**agent_config['model_config']['params'])
-#     llm = ChatOpenAI(
-#     base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
-#     api_key="ollama",
-#     **agent_config['model_config']['params']
-# )
-
+    llm = get_llm(agent_config)
     #chain = prompt | llm
     message_content =[{
         "type": "text",
@@ -356,18 +383,7 @@ async def recommend_action(request: DynamicRequest,username: str = Depends(get_c
     prompt = get_prompt_template(agent_config)
     policy = get_policy_from_db(agentid)
     # Initialize LLM and chain
-    # llm = OpenAI(**agent_config['model_config']['params'])
-    model_name = agent_config['model_config']['params'].get('model', '')
-
-    if model_name.startswith('gemma'):
-        llm = ChatOpenAI(
-            base_url=globals.config.get('llm_base_url', 'http://localhost:11434/v1'),
-            api_key="ollama",
-            **agent_config['model_config']['params']
-        )
-    else:
-        llm = ChatOpenAI(**agent_config['model_config']['params'])
-
+    llm = get_llm(agent_config)
     chain = prompt | llm
     inputs = {
         "policy": policy,  # Assuming `policy_document` is loaded dynamically
@@ -385,4 +401,3 @@ def reload_config(username: str = Depends(get_current_username),agentname: str =
     db.add_config('DIA',globals.config['appname'])
     initialize_vector_stores(agentname)
     return "Done"
-
