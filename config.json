@@ -1,10 +1,11 @@
 {
-  "llm_base_url": "http://host.docker.internal:11434",
   "TZ":"Asia/Calcutta",
   "appname":"agentdev",
   "schema":"agents",
   "path":"/app/secrets",
   "provider":"huggingface",
+  "llm_provider":"openai",
+  "ollama_base_url":"http://host.docker.internal:11434",
   "connections": [
   {
     "name": "txndb",
